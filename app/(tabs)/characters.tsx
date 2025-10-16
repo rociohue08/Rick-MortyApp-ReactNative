@@ -1,137 +1,176 @@
+// app/(tabs)/characters.tsx
+
 import { PasseroOne_400Regular } from '@expo-google-fonts/passero-one';
 import { useFonts } from 'expo-font';
+import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, StyleSheet, Text, View } from 'react-native';
-
-interface Character {
-  id: number;
-  name: string;
-  status: string;
-  species: string;
-  type: string;
-  gender: string;
-  image: string;
-  episode: string[];
-  url: string;
-  created: string;
+import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+// 🟢 Importaciones necesarias para los íconos de los botones
+import { Ionicons } from '@expo/vector-icons';
+import { useFavoriteActions } from '../context/FavoritesContext';
+// Interfaz para el tipado
+interface Personaje {
+  id: number;
+  name: string;
+  status: string;
+  species: string;
+  type: string;
+  gender: string;
+  image: string;
+  episode: string[];
+  url: string;
+  created: string;
 }
 
 export default function CharactersScreen() {
-  const [characters, setCharacters] = useState<Character[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [characters, setCharacters] = useState<Personaje[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Cargar la fuente
-  const [fontsLoaded] = useFonts({
-    PasseroOne_400Regular,
-  });
+  // 🟢 Hook de Favoritos
+  const { toggleFavorite, isFavorite } = useFavoriteActions();
 
-  // Obtener datos
-  useEffect(() => {
-    fetchCharacters();
-  }, []);
+  // Cargar la fuente
+  const [fontsLoaded] = useFonts({
+    PasseroOne_400Regular,
+  });
 
-  const fetchCharacters = async () => {
-    try {
-      const response = await fetch('https://rickandmortyapi.com/api/character');
-      const data = await response.json();
-      setCharacters(data.results);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Obtener datos
+  useEffect(() => {
+    fetchCharacters();
+  }, []);
 
-  if (!fontsLoaded || loading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#2ecc71" />
-        <Text>Cargando...</Text>
-      </View>
-    );
-  }
+  const fetchCharacters = async () => {
+    try {
+      const response = await fetch('https://rickandmortyapi.com/api/character');
+      const data = await response.json();
+      setCharacters(data.results);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Personajes de Rick & Morty</Text>
+  if (!fontsLoaded || loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#68ff10ff" />
+        <Text style={styles.textoComun}>Cargando...</Text>
+      </View>
+    );
+  }
 
-      <FlatList
-        data={characters}
-        keyExtractor={item => item.id.toString()}
-        renderItem={({ item }) => (
-  <View style={styles.characterItem}>
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Personajes de Rick & Morty</Text>
 
-    <Image
-      source={{ uri: item.image }}
-      style={styles.image}
-    />
+      <FlatList<Personaje> 
+        data={characters}
+        keyExtractor={item => item.id.toString()}
+        renderItem={({ item }) => {
+            // 🟢 Lógica para saber si es favorito
+            const isCharFavorite = isFavorite(item.id);
 
-    <View style={styles.infoContainer}>
-      <Text style={styles.textoComun}>Nombre:</Text>
-      <Text style={styles.name}>{item.name}</Text>
-      <Text style={styles.textoComun}>Especie: {item.species}</Text>
-    </View>
+            return (
+              <View style={styles.characterItemContainer}> 
+                <Image
+                  source={{ uri: item.image }}
+                  style={styles.image}
+                />
 
-  </View>
+                <View style={styles.infoContainer}>
+                  <Text style={styles.textoComun}>Nombre:</Text>
+                  <Text style={styles.name}>{item.name}</Text>
+                  <Text style={styles.textoComun}>Especie: {item.species}</Text>
+                </View>
 
-        )}
-      />
-    </View>
-  );
+                {/* 🟢 CONTENEDOR DE BOTONES (Corazón y Ojo) */}
+                <View style={styles.actionButtons}>
+                    
+                    {/* 1. BOTÓN DE FAVORITO (CORAZÓN) */}
+                    <Pressable
+                        onPress={() => toggleFavorite(item.id)}
+                        style={styles.actionButton}
+                    >
+                        <Ionicons 
+                            name={isCharFavorite ? 'heart' : 'heart-outline'} 
+                            size={30} 
+                            color={isCharFavorite ? '#ff6666' : '#68ff10ff'} // Rojo si es favorito
+                        />
+                    </Pressable>
+
+                    {/* 2. BOTÓN DE DETALLE (OJO) */}
+                    <Pressable
+                        onPress={() => router.push(`personajes/${item.id}` as any)} // 👈 Navegación al detalle
+                        style={styles.actionButton}
+                    >
+                        <Ionicons name="eye" size={30} color="#68ff10ff" />
+                    </Pressable>
+                </View>
+              </View>
+            );
+        }}
+      />
+    </View>
+  );
 }
 
+// --- ESTILOS MODIFICADOS ---
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    paddingTop: 40,
-    backgroundColor: '#000000ff',
-    
-  },
-
-
-  title: {
-    fontSize: 38,
-    fontWeight: 'bold',
-    fontFamily: 'PasseroOne_400Regular',
-    marginBottom: 20,
-    color:'#68ff10ff',
-    textAlign: 'center',
-  },
-characterItem: {
-  backgroundColor: '#700bb3a8',
-  padding: 20,
-  marginVertical: 8,
-  marginHorizontal: 16,
-  borderRadius: 8,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 3.84,
-  elevation: 5,
-  width: '85%',
-  flexDirection: 'row',
-  alignItems: 'flex-start', // 👈 Alinea todo al inicio (arriba), no al centro
+  container: {
+    flex: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingTop: 40,
+    backgroundColor: '#000000ff',
+  },
+  title: {
+    fontSize: 38,
+    fontWeight: 'bold',
+    fontFamily: 'PasseroOne_400Regular',
+    marginBottom: 20,
+    color:'#68ff10ff',
+    textAlign: 'center',
+  },
+// 🟢 characterItem ANTERIOR AHORA ES characterItemContainer (Es el contenedor de la fila)
+characterItemContainer: { 
+    backgroundColor: '#700bb3a8',
+    padding: 15,
+    marginVertical: 8,
+    marginHorizontal: 16,
+    borderRadius: 8,
+    width: '90%',
+    flexDirection: 'row',
+    alignItems: 'center', // Alinea la imagen y texto con los botones verticalmente
+    justifyContent: 'space-between', // Espacio entre contenido y botones
 },
-
 infoContainer: {
-  flex: 1,
-  marginLeft: 25, // 👈 Espacio a la izquierda del texto (separación clara)
-  marginTop: 40,
+  flex: 1,
+  marginLeft: 25, 
+  // Quitamos el marginTop: 40 para que se vea bien centrado
 },
-
 image: {
-  width: 150,
-  height: 150,
-  borderRadius: 75,
+  width: 80, // Reducido para caber en la fila
+  height: 80,
+  borderRadius: 40,
 },
-  name: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    fontFamily: 'PasseroOne_400Regular',
-    color:'#68ff10ff'
-  },
-  textoComun:{
-  color:'#68ff10ff'  }
+// 🟢 Nuevos estilos para los botones
+actionButtons: {
+    flexDirection: 'column', // Botones apilados
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 10,
+},
+actionButton: {
+    padding: 8,
+    marginVertical: 4, 
+},
+  name: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    fontFamily: 'PasseroOne_400Regular',
+    color:'#68ff10ff'
+  },
+  textoComun:{
+  color:'#68ff10ff'  }
 });
