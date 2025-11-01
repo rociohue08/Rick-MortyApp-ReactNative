@@ -1,176 +1,168 @@
-// app/(tabs)/characters.tsx
+// 📁 app/(tabs)/characters.tsx (VERSIÓN FINAL CON FUENTES Y ESTILOS)
 
 import { PasseroOne_400Regular } from '@expo-google-fonts/passero-one';
 import { useFonts } from 'expo-font';
-import { router } from 'expo-router';
+import { Link, Stack } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
-// 🟢 Importaciones necesarias para los íconos de los botones
-import { Ionicons } from '@expo/vector-icons';
-import { useFavoriteActions } from '../context/FavoritesContext';
-// Interfaz para el tipado
-interface Personaje {
-  id: number;
-  name: string;
-  status: string;
-  species: string;
-  type: string;
-  gender: string;
-  image: string;
-  episode: string[];
-  url: string;
-  created: string;
+import {
+    ActivityIndicator,
+    FlatList,
+    StyleSheet,
+    Text,
+    View
+} from 'react-native';
+
+import { getCharacters } from '../../src/api.js';
+// 💡 Importamos el componente de tarjeta modular
+import CharacterCard from '../../src/components/characterCard.jsx';
+
+// 💡 Interfaz para el tipado (USANDO TU ESTRUCTURA DETALLADA)
+interface Character {
+    id: number;
+    name: string;
+    status: string;
+    species: string;
+    type?: string;
+    gender: string;
+    image: string;
+    episode: string[];
+    url: string;
+    created: string;
 }
 
 export default function CharactersScreen() {
-  const [characters, setCharacters] = useState<Personaje[]>([]);
-  const [loading, setLoading] = useState(true);
+    const [characters, setCharacters] = useState<Character[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-  // 🟢 Hook de Favoritos
-  const { toggleFavorite, isFavorite } = useFavoriteActions();
+    // Cargar la fuente
+    const [fontsLoaded] = useFonts({
+        PasseroOne_400Regular,
+    });
 
-  // Cargar la fuente
-  const [fontsLoaded] = useFonts({
-    PasseroOne_400Regular,
-  });
+    // 1. Obtener datos (Usando la función de tu src/api.js)
+    useEffect(() => {
+        async function loadData() {
+            try {
+                // Asegúrate que getCharacters devuelva un array de Character[]
+                const data: Character[] = await getCharacters(); 
+                setCharacters(data);
+            } catch (error) {
+                console.error("Error fetching characters:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        loadData();
+    }, []);
 
-  // Obtener datos
-  useEffect(() => {
-    fetchCharacters();
-  }, []);
+    // 2. Vista de Carga y Fuente
+    if (!fontsLoaded || isLoading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#68ff10ff" />
+                <Text style={styles.textoComun}>Cargando...</Text>
+            </View>
+        );
+    }
+    
+    // 3. RenderItem: Llama a la tarjeta modular y le pasa los estilos.
+    const renderItem = ({ item }: { item: Character }) => (
+        // Usamos Link para navegar al detalle. La navegación está enlazada al Pressable de la Card.
+        <Link href={`/personajes/${item.id.toString()}`} asChild> 
+            {/* 💡 Pasamos el personaje y el objeto styles completo */}
+            <CharacterCard character={item} styles={styles} />
+        </Link>
+    );
 
-  const fetchCharacters = async () => {
-    try {
-      const response = await fetch('https://rickandmortyapi.com/api/character');
-      const data = await response.json();
-      setCharacters(data.results);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return (
+        <View style={styles.container}>
+            {/* Configura el título de la pestaña */}
+            <Stack.Screen options={{ title: 'Personajes', headerShown: false }} /> 
+            
+            {/* Tu título personalizado */}
+            <Text style={styles.title}>Personajes de Rick & Morty</Text>
 
-  if (!fontsLoaded || loading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#68ff10ff" />
-        <Text style={styles.textoComun}>Cargando...</Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Personajes de Rick & Morty</Text>
-
-      <FlatList<Personaje> 
-        data={characters}
-        keyExtractor={item => item.id.toString()}
-        renderItem={({ item }) => {
-            // 🟢 Lógica para saber si es favorito
-            const isCharFavorite = isFavorite(item.id);
-
-            return (
-              <View style={styles.characterItemContainer}> 
-                <Image
-                  source={{ uri: item.image }}
-                  style={styles.image}
-                />
-
-                <View style={styles.infoContainer}>
-                  <Text style={styles.textoComun}>Nombre:</Text>
-                  <Text style={styles.name}>{item.name}</Text>
-                  <Text style={styles.textoComun}>Especie: {item.species}</Text>
-                </View>
-
-                {/* 🟢 CONTENEDOR DE BOTONES (Corazón y Ojo) */}
-                <View style={styles.actionButtons}>
-                    
-                    {/* 1. BOTÓN DE FAVORITO (CORAZÓN) */}
-                    <Pressable
-                        onPress={() => toggleFavorite(item.id)}
-                        style={styles.actionButton}
-                    >
-                        <Ionicons 
-                            name={isCharFavorite ? 'heart' : 'heart-outline'} 
-                            size={30} 
-                            color={isCharFavorite ? '#ff6666' : '#68ff10ff'} // Rojo si es favorito
-                        />
-                    </Pressable>
-
-                    {/* 2. BOTÓN DE DETALLE (OJO) */}
-                    <Pressable
-                        onPress={() => router.push(`personajes/${item.id}` as any)} // 👈 Navegación al detalle
-                        style={styles.actionButton}
-                    >
-                        <Ionicons name="eye" size={30} color="#68ff10ff" />
-                    </Pressable>
-                </View>
-              </View>
-            );
-        }}
-      />
-    </View>
-  );
+            <FlatList<Character> 
+                data={characters}
+                keyExtractor={item => item.id.toString()}
+                renderItem={renderItem}
+                contentContainerStyle={styles.listContent}
+            />
+        </View>
+    );
 }
 
-// --- ESTILOS MODIFICADOS ---
+
+// --- ESTILOS DEFINIDOS AQUÍ ---
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    paddingTop: 40,
-    backgroundColor: '#000000ff',
-  },
-  title: {
-    fontSize: 38,
-    fontWeight: 'bold',
-    fontFamily: 'PasseroOne_400Regular',
-    marginBottom: 20,
-    color:'#68ff10ff',
-    textAlign: 'center',
-  },
-// 🟢 characterItem ANTERIOR AHORA ES characterItemContainer (Es el contenedor de la fila)
-characterItemContainer: { 
-    backgroundColor: '#700bb3a8',
-    padding: 15,
-    marginVertical: 8,
-    marginHorizontal: 16,
-    borderRadius: 8,
-    width: '90%',
-    flexDirection: 'row',
-    alignItems: 'center', // Alinea la imagen y texto con los botones verticalmente
-    justifyContent: 'space-between', // Espacio entre contenido y botones
-},
-infoContainer: {
-  flex: 1,
-  marginLeft: 25, 
-  // Quitamos el marginTop: 40 para que se vea bien centrado
-},
-image: {
-  width: 80, // Reducido para caber en la fila
-  height: 80,
-  borderRadius: 40,
-},
-// 🟢 Nuevos estilos para los botones
-actionButtons: {
-    flexDirection: 'column', // Botones apilados
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 10,
-},
-actionButton: {
-    padding: 8,
-    marginVertical: 4, 
-},
-  name: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    fontFamily: 'PasseroOne_400Regular',
-    color:'#68ff10ff'
-  },
-  textoComun:{
-  color:'#68ff10ff'  }
+    container: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        paddingTop: 40,
+        backgroundColor: '#000000ff',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#000000ff',
+    },
+    title: {
+        fontSize: 38,
+        fontWeight: 'bold',
+        fontFamily: 'PasseroOne_400Regular',
+        marginBottom: 20,
+        color:'#68ff10ff',
+        textAlign: 'center',
+    },
+    // Estilo que usará la Card: Contenedor de la fila
+    characterItemContainer: { 
+        backgroundColor: '#700bb3a8',
+        padding: 15,
+        marginVertical: 8,
+        marginHorizontal: 16,
+        borderRadius: 8,
+        width: '90%',
+        flexDirection: 'row',
+        alignItems: 'center', 
+        justifyContent: 'space-between', 
+    },
+    // Estilo que usará la Card: Contenedor de info (texto)
+    infoContainer: {
+        flex: 1,
+        marginLeft: 25, 
+    },
+    // Estilo que usará la Card: Imagen
+    image: {
+        width: 80, 
+        height: 80,
+        borderRadius: 40,
+    },
+    // Estilo que usará la Card: Botones
+    actionButtons: {
+        flexDirection: 'column', 
+        alignItems: 'center',
+        marginLeft: 10,
+    },
+    // Estilo que usará la Card: Botón individual
+    actionButton: {
+        padding: 8,
+        marginVertical: 4, 
+    },
+    // Estilo que usará la Card: Nombre
+    name: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        fontFamily: 'PasseroOne_400Regular',
+        color:'#68ff10ff'
+    },
+    // Estilo que usará la Card: Texto común
+    textoComun:{
+        color:'#68ff10ff'  
+    },
+    // Estilo para el contenido de la FlatList
+    listContent: {
+        paddingVertical: 10,
+    },
 });

@@ -1,32 +1,17 @@
-// app/_layout.tsx (MODIFICADO)
+// app/_layout.tsx
 
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { FavoritesProvider } from './context/FavoritesContext';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+import { Slot } from 'expo-router'; // Importamos el Slot de Expo Router
+import { FavoriteProvider } from '../src/context/favoritesContext'; // 💡 Importamos tu Provider
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
 
-  return (
-    // 🟢 2. ENVOLVER CON PROVIDER
-    <FavoritesProvider> 
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-          {/* 🟢 3. RUTA DE DETALLE DINÁMICA */}
-          <Stack.Screen name="personajes/[id]" options={{ title: 'Detalle' }} /> 
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
-    </FavoritesProvider>
-  );
+  // Nota: Aquí podrías añadir lógica de carga de fuentes si fuera necesario.
+  
+  return (
+    // 📢 Envolvemos toda la app con el Provider
+    <FavoriteProvider>
+      {/* El Slot renderiza el resto de las rutas (tabs, stacks, etc.) */}
+      <Slot /> 
+    </FavoriteProvider>
+  );
 }
