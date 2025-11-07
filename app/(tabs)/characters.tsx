@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
     },
     // Estilo que usará la Card: Contenedor de la fila
     characterItemContainer: { 
-        backgroundColor: '#700bb3a8',
+        backgroundColor: '#490840ff',
         padding: 15,
         marginVertical: 8,
         marginHorizontal: 16,
